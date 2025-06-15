@@ -8,24 +8,15 @@ class Hero extends Phaser.GameObjects.Sprite {
   declare body: Phaser.Physics.Arcade.Body;
 
   protected keys: Phaser.Types.Input.Keyboard.CursorKeys;
-  // protected pad: Phaser.Input.Gamepad.Gamepad;
-
   protected gamepadManager: GamepadManager;
-
   protected playerInput: { didPressJump?: boolean };
   protected animState: any;
   protected moveState: any;
-  // protected inputState: any;
   protected animPredicates: { [key: string]: () => boolean };
   protected movePredicates: { [key: string]: () => boolean };
   protected inputPredicates: { [key: string]: () => boolean };
 
-  constructor(
-    scene: GameScene,
-    x: number,
-    y: number,
-    gamepadManager: GamepadManager
-  ) {
+  constructor(scene: GameScene, x: number, y: number) {
     super(scene, x, y, "hero-run-sheet", 0);
 
     scene.add.existing(this);
@@ -44,8 +35,6 @@ class Hero extends Phaser.GameObjects.Sprite {
     // this.pad = scene.pad;
     this.playerInput = {};
 
-    this.gamepadManager = gamepadManager;
-
     this.setupAnimations();
     this.setupMovement();
     // this.setupInput();
@@ -54,16 +43,6 @@ class Hero extends Phaser.GameObjects.Sprite {
   setGamepadManager(gamepadManager: GamepadManager) {
     this.gamepadManager = gamepadManager;
   }
-
-  // setupInput() {
-  //   this.inputState = new StateMachine({
-  //     init: "no-input",
-  //     transitions: [
-  //       { name: "keyboard", from: "*", to: "keyboard" },
-  //       { name: "gamepad", from: "*", to: "gamepad" },
-  //     ],
-  //   });
-  // }
 
   setupAnimations() {
     this.animState = new StateMachine({
@@ -188,12 +167,6 @@ class Hero extends Phaser.GameObjects.Sprite {
         this.gamepadManager?.isButtonJustPressed(
           Phaser.Input.Gamepad.Configs.XBOX_360.A
         ));
-    // this.pad?.isButtonDown(Phaser.Input.Gamepad.Configs.XBOX_360.A));
-    // this.pad?.index === 0);
-    // console.log("this.pad", this.pad)
-    // this.pad?.isButtonDown(0));
-
-    //  (this.pad && this.pad.A && Phaser.Input.Keyboard.JustDown(this.pad.A)));
 
     // Handle left movement from either keyboard or gamepad
     if (

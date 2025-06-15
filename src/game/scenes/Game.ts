@@ -5,12 +5,10 @@ import { GamepadManager } from "../GamepadManager";
 export class Game extends Scene {
   cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
   map: Phaser.Tilemaps.Tilemap;
-  //   map: Phaser.Tilemaps.TilemapLayer;
   hero: Hero;
   spawnPos: { x: number; y: number };
   spikeGroup: Phaser.Physics.Arcade.Group;
 
-  pad: any;
   gamepadManager: GamepadManager;
 
   constructor() {
@@ -20,11 +18,7 @@ export class Game extends Scene {
   create() {
     this.cursorKeys = this.input.keyboard!.createCursorKeys();
 
-    this.addMap();
-
-    this.addHero();
-
-    this.addController();
+    this.addController(this.addHero(this.addMap()));
 
     this.cameras.main.setBounds(
       0,
@@ -33,10 +27,10 @@ export class Game extends Scene {
       this.map.heightInPixels
     );
 
-    window.scene = this;
+    // window.scene = this;
   }
 
-  addController() {
+  addController(hero: Hero) {
     if (!this.input.gamepad) {
       throw new Error(
         "You are probably missing `input.gamepad = true` config setting in Phaser.Types.Core.GameConfig"
@@ -48,48 +42,42 @@ export class Game extends Scene {
       this.input.gamepad.once(
         "connected",
         (pad: Phaser.Input.Gamepad.Gamepad) => {
-          window.pad = pad;
-
-          console.log("omg we actually managed to connect");
-          this.pad = pad;
           this.gamepadManager = new GamepadManager(pad);
 
-          this.hero.setGamepadManager(this.gamepadManager);
-
-          this.pad.on("down", (index: any, value: any, button: any) => {
-            console.log(
-              `Connected after create on connected event. index: ${index}, value: ${value}, button: ${button}`
-            );
-            window.lastPressedButton = button;
-          });
+          hero.setGamepadManager(this.gamepadManager);
         }
       );
     } else {
       console.log("this.input.gamepad.total !== 0", this.input.gamepad.total);
-      this.pad = this.input.gamepad.pad1;
-      this.gamepadManager = new GamepadManager(this.pad);
+      this.gamepadManager = new GamepadManager(this.input.gamepad.pad1);
 
-      this.pad.on("down", (index: any, value: any, button: any) => {
-        console.log(
-          `Connected on create. index: ${index}, value: ${value}, button: ${button}`
-        );
-      });
+      hero.setGamepadManager(this.gamepadManager);
     }
+
+    // this.gamepadManager.pad.on(
+    //   "down",
+    //   (index: any, value: any, button: any) => {
+    //     console.log(
+    //       `Connected after create on connected event. index: ${index}, value: ${value}, button: ${button}`
+    //     );
+    //     window.lastPressedButton = button;
+    //   }
+    // );
   }
 
-  addHero() {
+  addHero(map: Phaser.Tilemaps.Tilemap): Hero {
     this.hero = new Hero(this, this.spawnPos.x, this.spawnPos.y);
 
     this.cameras.main.startFollow(this.hero);
 
-    const foregroundLayer = this.map.getLayer("Foreground")?.tilemapLayer;
+    const foregroundLayer = map.getLayer("Foreground")?.tilemapLayer;
     if (!foregroundLayer) {
       throw new Error("Foreground layer not found");
     }
 
     this.children.moveTo(this.hero, this.children.getIndex(foregroundLayer));
 
-    const groundLayer = this.map.getLayer("Ground")?.tilemapLayer;
+    const groundLayer = map.getLayer("Ground")?.tilemapLayer;
     if (!groundLayer) {
       throw new Error("Ground layer not found");
     }
@@ -110,9 +98,11 @@ export class Game extends Scene {
       this.hero.body.setCollideWorldBounds(false);
       this.cameras.main.stopFollow();
     });
+
+    return this.hero;
   }
 
-  addMap() {
+  addMap(): Phaser.Tilemaps.Tilemap {
     this.map = this.make.tilemap({ key: "level-1" });
     const groundTiles = this.map.addTilesetImage("world-1", "world-1-sheet");
     if (!groundTiles) {
@@ -171,6 +161,8 @@ export class Game extends Scene {
 
     // const debugGraphics = this.add.graphics();
     // groundLayer.renderDebug(debugGraphics);
+
+    return this.map;
   }
 
   update(_time: number, _delta: number) {
@@ -179,52 +171,9 @@ export class Game extends Scene {
       this.cameras.main.height
     ).y;
 
-    // if (this.pad) {
-    //   if (this.pad.isDown(Phaser.Input.Gamepad.GamepadButton.DPAD_UP)) {
-    //     this.hero.body.velocity.y = -100;
-    //   }
-    // }
-
-    /*
-    const pads = this.input.gamepad.gamepads;
-
-    for (let i = 0; i < pads.length; i++)
-    {
-        const gamepad = pads[i];
-
-        if (!gamepad)
-        {
-            continue;
-        }
-
-        const sprite = this.sprites[i];
-
-        if (gamepad.left)
-        {
-            sprite.x -= 4;
-            sprite.flipX = false;
-        }
-        else if (gamepad.right)
-        {
-            sprite.x += 4;
-            sprite.flipX = true;
-        }
-
-        if (gamepad.up)
-        {
-            sprite.y -= 4;
-        }
-        else if (gamepad.down)
-        {
-            sprite.y += 4;
-        }
-    }
-}
-    */
-
     if (this.hero.isDead() && this.hero.getBounds().top > cameraBottom + 100) {
       this.hero.destroy();
-      this.addHero();
+      this.addController(this.addHero(this.map));
     }
   }
 }
