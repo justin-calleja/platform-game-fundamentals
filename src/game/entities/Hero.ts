@@ -1,16 +1,24 @@
-/// <reference path="../../typings/phaser.d.ts" />
-import Phaser from 'phaser';
-import StateMachine from 'javascript-state-machine';
+import Phaser from "phaser";
+import StateMachine from "javascript-state-machine";
+import { Game as GameScene } from "../scenes/Game";
 
 class Hero extends Phaser.GameObjects.Sprite {
+  declare body: Phaser.Physics.Arcade.Body;
 
-  constructor(scene, x, y) {
-    super(scene, x, y, 'hero-run-sheet', 0);
-    
+  private keys: Phaser.Types.Input.Keyboard.CursorKeys;
+  private playerInput: { didPressJump?: boolean };
+  private animState: any;
+  private moveState: any;
+  private animPredicates: { [key: string]: () => boolean };
+  private movePredicates: { [key: string]: () => boolean };
+
+  constructor(scene: GameScene, x: number, y: number) {
+    super(scene, x, y, "hero-run-sheet", 0);
+
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.anims.play('hero-running');
+    this.anims.play("hero-running");
 
     this.setOrigin(0.5, 1);
     this.body.setCollideWorldBounds(true);
@@ -20,27 +28,32 @@ class Hero extends Phaser.GameObjects.Sprite {
     this.body.setDragX(750);
 
     this.keys = scene.cursorKeys;
-    this.input = {};
+    this.playerInput = {};
 
     this.setupAnimations();
     this.setupMovement();
   }
 
   setupAnimations() {
+    // @ts-ignore
     this.animState = new StateMachine({
-      init: 'idle',
+      init: "idle",
       transitions: [
-        { name: 'idle', from: ['falling', 'running', 'pivoting'], to: 'idle' },
-        { name: 'run', from: ['falling', 'idle', 'pivoting'], to: 'running' },
-        { name: 'pivot', from: ['falling', 'running'], to: 'pivoting' },
-        { name: 'jump', from: ['idle', 'running', 'pivoting'], to: 'jumping' },
-        { name: 'flip', from: ['jumping', 'falling'], to: 'flipping' },
-        { name: 'fall', from: ['idle', 'running', 'pivoting', 'jumping', 'flipping'], to: 'falling' },
-        { name: 'die', from: '*', to: 'dead' },
+        { name: "idle", from: ["falling", "running", "pivoting"], to: "idle" },
+        { name: "run", from: ["falling", "idle", "pivoting"], to: "running" },
+        { name: "pivot", from: ["falling", "running"], to: "pivoting" },
+        { name: "jump", from: ["idle", "running", "pivoting"], to: "jumping" },
+        { name: "flip", from: ["jumping", "falling"], to: "flipping" },
+        {
+          name: "fall",
+          from: ["idle", "running", "pivoting", "jumping", "flipping"],
+          to: "falling",
+        },
+        { name: "die", from: "*", to: "dead" },
       ],
       methods: {
-        onEnterState: (lifecycle) => {
-          this.anims.play('hero-' + lifecycle.to);
+        onEnterState: (lifecycle: any) => {
+          this.anims.play("hero-" + lifecycle.to);
           console.log(lifecycle);
         },
       },
@@ -51,16 +64,22 @@ class Hero extends Phaser.GameObjects.Sprite {
         return this.body.onFloor() && this.body.velocity.x === 0;
       },
       run: () => {
-        return this.body.onFloor() && Math.sign(this.body.velocity.x) === (this.flipX ? -1 : 1);
+        return (
+          this.body.onFloor() &&
+          Math.sign(this.body.velocity.x) === (this.flipX ? -1 : 1)
+        );
       },
       pivot: () => {
-        return this.body.onFloor() && Math.sign(this.body.velocity.x) === (this.flipX ? 1 : -1);
+        return (
+          this.body.onFloor() &&
+          Math.sign(this.body.velocity.x) === (this.flipX ? 1 : -1)
+        );
       },
       jump: () => {
         return this.body.velocity.y < 0;
       },
       flip: () => {
-        return this.body.velocity.y < 0 && this.moveState.is('flipping');
+        return this.body.velocity.y < 0 && this.moveState.is("flipping");
       },
       fall: () => {
         return this.body.velocity.y > 0;
@@ -69,14 +88,23 @@ class Hero extends Phaser.GameObjects.Sprite {
   }
 
   setupMovement() {
+    // @ts-ignore
     this.moveState = new StateMachine({
-      init: 'standing',
+      init: "standing",
       transitions: [
-        { name: 'jump', from: 'standing', to: 'jumping' },
-        { name: 'flip', from: 'jumping', to: 'flipping' },
-        { name: 'fall', from: 'standing', to: 'falling' },
-        { name: 'touchdown', from: ['jumping', 'flipping', 'falling'], to: 'standing'},
-        { name: 'die', from: ['jumping', 'flipping', 'falling', 'standing'], to: 'dead' },
+        { name: "jump", from: "standing", to: "jumping" },
+        { name: "flip", from: "jumping", to: "flipping" },
+        { name: "fall", from: "standing", to: "falling" },
+        {
+          name: "touchdown",
+          from: ["jumping", "flipping", "falling"],
+          to: "standing",
+        },
+        {
+          name: "die",
+          from: ["jumping", "flipping", "falling", "standing"],
+          to: "dead",
+        },
       ],
       methods: {
         onJump: () => {
@@ -94,10 +122,10 @@ class Hero extends Phaser.GameObjects.Sprite {
 
     this.movePredicates = {
       jump: () => {
-        return this.input.didPressJump;
+        return this.playerInput.didPressJump ?? false;
       },
       flip: () => {
-        return this.input.didPressJump;
+        return this.playerInput.didPressJump ?? false;
       },
       fall: () => {
         return !this.body.onFloor();
@@ -109,22 +137,23 @@ class Hero extends Phaser.GameObjects.Sprite {
   }
 
   kill() {
-    if (this.moveState.can('die')) {
+    if (this.moveState.can("die")) {
       this.moveState.die();
       this.animState.die();
-      this.emit('died');
+      this.emit("died");
     }
   }
 
   isDead() {
-    return this.moveState.is('dead');
+    return this.moveState.is("dead");
   }
 
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
 
-    this.input.didPressJump = !this.isDead() && Phaser.Input.Keyboard.JustDown(this.keys.up);
-    
+    this.playerInput.didPressJump =
+      !this.isDead() && Phaser.Input.Keyboard.JustDown(this.keys.up);
+
     if (!this.isDead() && this.keys.left.isDown) {
       this.body.setAccelerationX(-1000);
       this.setFlipX(true);
@@ -137,7 +166,7 @@ class Hero extends Phaser.GameObjects.Sprite {
       this.body.setAccelerationX(0);
     }
 
-    if (this.moveState.is('jumping') || this.moveState.is('flipping')) {
+    if (this.moveState.is("jumping") || this.moveState.is("flipping")) {
       if (!this.keys.up.isDown && this.body.velocity.y < -150) {
         this.body.setVelocityY(-150);
       }
@@ -157,7 +186,6 @@ class Hero extends Phaser.GameObjects.Sprite {
       }
     }
   }
-
 }
 
 export default Hero;
