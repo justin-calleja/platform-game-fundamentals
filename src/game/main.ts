@@ -6,6 +6,9 @@ const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: "game-container",
   backgroundColor: "#33A5E7",
+  input: {
+    gamepad: true,
+  },
   scale: {
     width: 500,
     height: 320,

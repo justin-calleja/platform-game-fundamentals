@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import Hero from "../entities/Hero";
+import { GamepadManager } from "../GamepadManager";
 
 export class Game extends Scene {
   cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -8,6 +9,9 @@ export class Game extends Scene {
   hero: Hero;
   spawnPos: { x: number; y: number };
   spikeGroup: Phaser.Physics.Arcade.Group;
+
+  pad: any;
+  gamepadManager: GamepadManager;
 
   constructor() {
     super("Game");
@@ -20,12 +24,57 @@ export class Game extends Scene {
 
     this.addHero();
 
+    this.addController();
+
     this.cameras.main.setBounds(
       0,
       0,
       this.map.widthInPixels,
       this.map.heightInPixels
     );
+
+    window.scene = this;
+  }
+
+  addController() {
+    if (!this.input.gamepad) {
+      throw new Error(
+        "You are probably missing `input.gamepad = true` config setting in Phaser.Types.Core.GameConfig"
+      );
+    }
+
+    if (this.input.gamepad.total === 0) {
+      console.log("this.input.gamepad.total === 0", this.input.gamepad.total);
+      this.input.gamepad.once(
+        "connected",
+        (pad: Phaser.Input.Gamepad.Gamepad) => {
+          window.pad = pad;
+
+          console.log("omg we actually managed to connect");
+          this.pad = pad;
+          this.gamepadManager = new GamepadManager(pad);
+
+          this.hero.setGamepadManager(this.gamepadManager);
+
+          this.pad.on("down", (index: any, value: any, button: any) => {
+            console.log(
+              `Connected after create on connected event. index: ${index}, value: ${value}, button: ${button}`
+            );
+            window.lastPressedButton = button;
+          });
+        }
+      );
+    } else {
+      console.log("this.input.gamepad.total !== 0", this.input.gamepad.total);
+      this.pad = this.input.gamepad.pad1;
+      this.gamepadManager = new GamepadManager(this.pad);
+
+      this.pad.on("down", (index: any, value: any, button: any) => {
+        console.log(
+          `Connected on create. index: ${index}, value: ${value}, button: ${button}`
+        );
+      });
+    }
   }
 
   addHero() {
@@ -129,6 +178,49 @@ export class Game extends Scene {
       0,
       this.cameras.main.height
     ).y;
+
+    // if (this.pad) {
+    //   if (this.pad.isDown(Phaser.Input.Gamepad.GamepadButton.DPAD_UP)) {
+    //     this.hero.body.velocity.y = -100;
+    //   }
+    // }
+
+    /*
+    const pads = this.input.gamepad.gamepads;
+
+    for (let i = 0; i < pads.length; i++)
+    {
+        const gamepad = pads[i];
+
+        if (!gamepad)
+        {
+            continue;
+        }
+
+        const sprite = this.sprites[i];
+
+        if (gamepad.left)
+        {
+            sprite.x -= 4;
+            sprite.flipX = false;
+        }
+        else if (gamepad.right)
+        {
+            sprite.x += 4;
+            sprite.flipX = true;
+        }
+
+        if (gamepad.up)
+        {
+            sprite.y -= 4;
+        }
+        else if (gamepad.down)
+        {
+            sprite.y += 4;
+        }
+    }
+}
+    */
 
     if (this.hero.isDead() && this.hero.getBounds().top > cameraBottom + 100) {
       this.hero.destroy();
