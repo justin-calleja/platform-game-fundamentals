@@ -37,7 +37,6 @@ class Hero extends Phaser.GameObjects.Sprite {
 
     this.setupAnimations();
     this.setupMovement();
-    // this.setupInput();
   }
 
   setGamepad(gamepad: Gamepad) {
@@ -160,6 +159,8 @@ class Hero extends Phaser.GameObjects.Sprite {
   preUpdate(time: number, delta: number) {
     super.preUpdate(time, delta);
 
+    const leftStickX = this.gamepad?.leftStick.x ?? 0;
+
     // Check for jump input from either keyboard or gamepad
     this.playerInput.didPressJump =
       !this.isDead() && // Phaser.Input.Keyboard.JustDown(this.keys.up);
@@ -169,11 +170,7 @@ class Hero extends Phaser.GameObjects.Sprite {
         ));
 
     // Handle left movement from either keyboard or gamepad
-    if (
-      !this.isDead() &&
-      (this.keys.left.isDown ||
-        (this.gamepad && this.gamepad.leftStick.x < -0.5))
-    ) {
+    if (!this.isDead() && (this.keys.left.isDown || leftStickX < -0.5)) {
       this.body.setAccelerationX(-1000);
       this.setFlipX(true);
       this.body.offset.x = 8;
@@ -181,8 +178,7 @@ class Hero extends Phaser.GameObjects.Sprite {
     // Handle right movement from either keyboard or gamepad
     else if (
       !this.isDead() &&
-      (this.keys.right.isDown ||
-        (this.gamepad && this.gamepad?.leftStick.x > 0.5))
+      (this.keys.right.isDown || (this.gamepad && leftStickX > 0.5))
     ) {
       this.body.setAccelerationX(1000);
       this.setFlipX(false);

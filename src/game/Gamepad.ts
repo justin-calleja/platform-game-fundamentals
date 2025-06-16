@@ -1,15 +1,23 @@
 import { Input } from "phaser";
 
 export class Gamepad {
-  protected _pad: Phaser.Input.Gamepad.Gamepad;
+  protected _pad?: Phaser.Input.Gamepad.Gamepad;
   protected previousButtonStates: { [key: number]: boolean } = {};
 
-  public leftStick: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
-  public rightStick: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
-  public isButtonDown: (typeof this._pad)["isButtonDown"] = () => false;
-
-  protected get pad() {
+  get pad(): Phaser.Input.Gamepad.Gamepad | undefined {
     return this._pad;
+  }
+
+  get leftStick() {
+    return this._pad?.leftStick ?? new Phaser.Math.Vector2(0, 0);
+  }
+
+  get rightStick() {
+    return this._pad?.rightStick ?? new Phaser.Math.Vector2(0, 0);
+  }
+
+  isButtonDown(buttonIndex: number) {
+    return this._pad?.isButtonDown(buttonIndex) ?? false;
   }
 
   protected set pad(pad: Phaser.Input.Gamepad.Gamepad) {
@@ -17,7 +25,10 @@ export class Gamepad {
       return;
     }
 
-    this.initPad(pad, this._pad);
+    // this._pad?.off("down", this.logKeys);
+    // pad.on("down", this.logKeys);
+
+    this._pad = pad;
   }
 
   constructor(gamepadPlugin: Input.Gamepad.GamepadPlugin) {
@@ -30,26 +41,11 @@ export class Gamepad {
     }
   }
 
-  initPad(
-    pad: Phaser.Input.Gamepad.Gamepad,
-    oldPad?: Phaser.Input.Gamepad.Gamepad
-  ) {
-    oldPad?.off("down", this.logKeys);
-
-    pad.on("down", this.logKeys);
-    this._pad = pad;
-    this.leftStick = pad.leftStick;
-    this.rightStick = pad.rightStick;
-    this.isButtonDown = pad.isButtonDown;
-  }
-
-  logKeys() {
-    this.pad.on("down", (index: any, value: any, button: any) => {
-      console.log(
-        `on "down": index: ${index}, value: ${value}, button: ${button}`
-      );
-      window.lastPressedButton = button;
-    });
+  logKeys(index: any, value: any, button: any) {
+    console.log(
+      `on "down": index: ${index}, value: ${value}, button: ${button}`
+    );
+    // window.lastPressedButton = button;
   }
 
   /*
