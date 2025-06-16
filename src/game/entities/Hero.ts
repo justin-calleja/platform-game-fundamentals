@@ -2,13 +2,13 @@ import Phaser from "phaser";
 // @ts-ignore
 import StateMachine from "javascript-state-machine";
 import { Game as GameScene } from "../scenes/Game";
-import { GamepadManager } from "../GamepadManager";
+import { Gamepad } from "../Gamepad";
 
 class Hero extends Phaser.GameObjects.Sprite {
   declare body: Phaser.Physics.Arcade.Body;
 
   protected keys: Phaser.Types.Input.Keyboard.CursorKeys;
-  protected gamepadManager: GamepadManager;
+  protected gamepad?: Gamepad;
   protected playerInput: { didPressJump?: boolean };
   protected animState: any;
   protected moveState: any;
@@ -40,8 +40,8 @@ class Hero extends Phaser.GameObjects.Sprite {
     // this.setupInput();
   }
 
-  setGamepadManager(gamepadManager: GamepadManager) {
-    this.gamepadManager = gamepadManager;
+  setGamepad(gamepad: Gamepad) {
+    this.gamepad = gamepad;
   }
 
   setupAnimations() {
@@ -164,14 +164,15 @@ class Hero extends Phaser.GameObjects.Sprite {
     this.playerInput.didPressJump =
       !this.isDead() && // Phaser.Input.Keyboard.JustDown(this.keys.up);
       (Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-        this.gamepadManager?.isButtonJustPressed(
+        this.gamepad?.isButtonJustPressed(
           Phaser.Input.Gamepad.Configs.XBOX_360.A
         ));
 
     // Handle left movement from either keyboard or gamepad
     if (
       !this.isDead() &&
-      (this.keys.left.isDown || this.gamepadManager?.pad.leftStick.x < -0.5)
+      (this.keys.left.isDown ||
+        (this.gamepad && this.gamepad.leftStick.x < -0.5))
     ) {
       this.body.setAccelerationX(-1000);
       this.setFlipX(true);
@@ -180,7 +181,8 @@ class Hero extends Phaser.GameObjects.Sprite {
     // Handle right movement from either keyboard or gamepad
     else if (
       !this.isDead() &&
-      (this.keys.right.isDown || this.gamepadManager?.pad.leftStick.x > 0.5)
+      (this.keys.right.isDown ||
+        (this.gamepad && this.gamepad?.leftStick.x > 0.5))
     ) {
       this.body.setAccelerationX(1000);
       this.setFlipX(false);
@@ -193,9 +195,7 @@ class Hero extends Phaser.GameObjects.Sprite {
       // Check for jump release from either input method
       if (
         !this.keys.up.isDown &&
-        !this.gamepadManager?.pad.isButtonDown(
-          Phaser.Input.Gamepad.Configs.XBOX_360.A
-        ) &&
+        !this.gamepad?.isButtonDown(Phaser.Input.Gamepad.Configs.XBOX_360.A) &&
         this.body.velocity.y < -150
       ) {
         this.body.setVelocityY(-150);

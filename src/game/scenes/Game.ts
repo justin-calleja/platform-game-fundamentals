@@ -1,6 +1,6 @@
 import { Scene } from "phaser";
 import Hero from "../entities/Hero";
-import { GamepadManager } from "../GamepadManager";
+import { Gamepad } from "../Gamepad";
 
 export class Game extends Scene {
   cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -9,7 +9,7 @@ export class Game extends Scene {
   spawnPos: { x: number; y: number };
   spikeGroup: Phaser.Physics.Arcade.Group;
 
-  gamepadManager: GamepadManager;
+  gamepadManager: Gamepad;
 
   constructor() {
     super("Game");
@@ -37,32 +37,7 @@ export class Game extends Scene {
       );
     }
 
-    if (this.input.gamepad.total === 0) {
-      console.log("this.input.gamepad.total === 0", this.input.gamepad.total);
-      this.input.gamepad.once(
-        "connected",
-        (pad: Phaser.Input.Gamepad.Gamepad) => {
-          this.gamepadManager = new GamepadManager(pad);
-
-          hero.setGamepadManager(this.gamepadManager);
-        }
-      );
-    } else {
-      console.log("this.input.gamepad.total !== 0", this.input.gamepad.total);
-      this.gamepadManager = new GamepadManager(this.input.gamepad.pad1);
-
-      hero.setGamepadManager(this.gamepadManager);
-    }
-
-    // this.gamepadManager.pad.on(
-    //   "down",
-    //   (index: any, value: any, button: any) => {
-    //     console.log(
-    //       `Connected after create on connected event. index: ${index}, value: ${value}, button: ${button}`
-    //     );
-    //     window.lastPressedButton = button;
-    //   }
-    // );
+    hero.setGamepad(new Gamepad(this.input.gamepad));
   }
 
   addHero(map: Phaser.Tilemaps.Tilemap): Hero {
